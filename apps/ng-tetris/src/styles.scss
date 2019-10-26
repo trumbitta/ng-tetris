@@ -1,1 +1,19 @@
 /* You can add global styles to this file, and also import other style files */
+
+@import '~bootstrap/scss/mixins';
+@import '~bootstrap/scss/functions';
+@import '~bootstrap/scss/variables';
+@import '~bootstrap/scss/reboot';
+
+body {
+  font-family: 'Press Start 2P', cursive;
+  color: #444;
+}
+
+.m-0 {
+  margin: 0;
+}
+
+.my-5 {
+  margin: 5rem 0;
+}
