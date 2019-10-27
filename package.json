@@ -7,6 +7,7 @@
     "nx": "nx",
     "start": "ng serve",
     "build": "ng build",
+    "build:ci": "npm run affected:build -- --all --prod --vendor-chunk --no-progress",
     "test": "ng test",
     "lint": "nx workspace-lint && ng lint",
     "e2e": "ng e2e",
