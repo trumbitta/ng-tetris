@@ -1,6 +1,7 @@
 export const COLS = 10;
 export const ROWS = 20;
 export const BLOCK_SIZE = 30;
+export const LINES_PER_LEVEL = 10;
 
 export const COLORS = [
   'none',
@@ -25,9 +26,21 @@ export const SHAPES = [
 ];
 
 export enum Keys {
+  ESC = 27,
   SPACE = 32,
   LEFT = 37,
   UP = 38,
   RIGHT = 39,
   DOWN = 40
 }
+
+export enum Points {
+  SINGLE = 100,
+  DOUBLE = 300,
+  TRIPLE = 500,
+  TETRIS = 800,
+  SOFT_DROP = 1,
+  HARD_DROP = 2
+}
+
+export const levels = [800, 720, 630, 550, 480, 400, 350, 300, 250, 200];

@@ -8,7 +8,16 @@ import {
 } from '@angular/core';
 
 // App Configurations
-import { COLS, BLOCK_SIZE, ROWS, Keys, COLORS } from '../config/app.config';
+import {
+  COLS,
+  BLOCK_SIZE,
+  ROWS,
+  Keys,
+  COLORS,
+  Points,
+  LINES_PER_LEVEL,
+  levels
+} from '../config/app.config';
 
 // App Models
 import { Piece, PieceObject } from '../pieces/piece.model';
@@ -89,10 +98,13 @@ export class GameBoardComponent implements OnInit {
     [Keys.UP]: (p: Piece): Piece => this.pieceService.rotate(p)
   };
   private time = { start: 0, elapsed: 0, level: 1000 };
+  private requestAnimationFrameId: number;
 
   @HostListener('window:keydown', ['$event'])
   keyEvent(event: KeyboardEvent) {
-    if (this.moves[event.keyCode]) {
+    if (event.keyCode === Keys.ESC) {
+      this.gameOver();
+    } else if (this.moves[event.keyCode]) {
       // If the keyCode exists in our moves stop the event from bubbling.
       event.preventDefault();
       // Get the next state of the piece.
@@ -100,12 +112,17 @@ export class GameBoardComponent implements OnInit {
 
       if (event.keyCode === Keys.SPACE) {
         while (this.pieceService.isValidMove(movedPiece, this.board)) {
-          this.currentPiece.move(movedPiece);
+          this.points += Points.HARD_DROP;
 
+          this.currentPiece.move(movedPiece);
           movedPiece = this.moves[Keys.DOWN](this.currentPiece);
         }
       } else if (this.pieceService.isValidMove(movedPiece, this.board)) {
         this.currentPiece.move(movedPiece);
+
+        if (event.keyCode === Keys.DOWN) {
+          this.points += Points.SOFT_DROP;
+        }
       }
 
       this.draw();
@@ -119,15 +136,25 @@ export class GameBoardComponent implements OnInit {
 
   ngOnInit() {
     this.initBoard();
+    this.resetGame();
   }
 
   play() {
-    this.board = this.gameBoardService.getEmptyBoard();
+    if (this.requestAnimationFrameId) {
+      cancelAnimationFrame(this.requestAnimationFrameId);
+    }
+
+    this.resetGame();
     this.currentPiece = new PieceObject(this.canvasRenderingContext);
     this.nextPiece = new PieceObject(this.canvasRenderingContext);
     this.animate();
+  }
 
-    console.table(this.board);
+  private resetGame() {
+    this.points = 0;
+    this.lines = 0;
+    this.level = 0;
+    this.board = this.gameBoardService.getEmptyBoard();
   }
 
   private clearLines() {
@@ -135,11 +162,40 @@ export class GameBoardComponent implements OnInit {
     const clearedBoard = this.board.filter(
       row => !row.every(value => value > 0)
     );
-    const missingRows = Array(currentRows - clearedBoard.length).fill(
-      Array(COLS).fill(0)
-    );
+    const clearedRows: number[][] = Array(
+      currentRows - clearedBoard.length
+    ).fill(Array(COLS).fill(0));
 
-    this.board = [...missingRows, ...clearedBoard];
+    this.lines += clearedRows.length;
+
+    if (this.lines >= LINES_PER_LEVEL) {
+      this.level++;
+
+      this.lines -= LINES_PER_LEVEL;
+
+      this.time.level = levels[this.level] || levels[levels.length - 1];
+    }
+
+    this.points = this.getClearedLinesPoints(
+      this.points,
+      clearedRows.length,
+      this.level
+    );
+    this.board = [...clearedRows, ...clearedBoard];
+  }
+
+  private getClearedLinesPoints(
+    currentPoints: number,
+    clearedLines: number,
+    level: number
+  ) {
+    return (
+      (currentPoints +=
+        [0, Points.SINGLE, Points.DOUBLE, Points.TRIPLE, Points.TETRIS][
+          clearedLines
+        ] || 0) *
+      (level + 1)
+    );
   }
 
   private freeze() {
@@ -170,14 +226,30 @@ export class GameBoardComponent implements OnInit {
     if (this.time.elapsed > this.time.level) {
       // Reset start time
       this.time.start = now;
-      this.drop();
+      if (!this.drop()) {
+        this.gameOver();
+
+        return;
+      }
     }
 
     this.draw();
-    requestAnimationFrame(this.animate.bind(this));
+    this.requestAnimationFrameId = requestAnimationFrame(
+      this.animate.bind(this)
+    );
   }
 
-  private drop() {
+  private gameOver() {
+    cancelAnimationFrame(this.requestAnimationFrameId);
+
+    this.canvasRenderingContext.fillStyle = '#444';
+    this.canvasRenderingContext.fillRect(0.25, 3, 9.5, 2);
+    this.canvasRenderingContext.font = '1px "Press Start 2P"';
+    this.canvasRenderingContext.fillStyle = 'red';
+    this.canvasRenderingContext.fillText('GAME OVER', 0.55, 4.6);
+  }
+
+  private drop(): boolean {
     const movedPiece = this.moves[Keys.DOWN](this.currentPiece);
 
     if (this.pieceService.isValidMove(movedPiece, this.board)) {
@@ -185,8 +257,15 @@ export class GameBoardComponent implements OnInit {
     } else {
       this.freeze();
       this.clearLines();
+
+      if (this.currentPiece.y === 0) {
+        return false;
+      }
+
       this.currentPiece = new PieceObject(this.canvasRenderingContext);
     }
+
+    return true;
   }
 
   private draw() {
