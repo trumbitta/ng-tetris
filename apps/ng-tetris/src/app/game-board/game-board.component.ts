@@ -39,6 +39,8 @@ import { PieceService } from '../pieces/piece.service';
           <p>Level: {{ level }}</p>
         </article>
 
+        <canvas #nextPiece class="next-piece"></canvas>
+
         <p class="m-0"><button (click)="play()">Play</button></p>
       </aside>
     </main>
@@ -52,8 +54,12 @@ import { PieceService } from '../pieces/piece.service';
         justify-content: center;
       }
 
-      canvas {
+      .game-board {
         border: 4px solid #444;
+      }
+
+      .next-piece {
+        height: 16rem;
       }
 
       aside {
@@ -80,13 +86,16 @@ import { PieceService } from '../pieces/piece.service';
 export class GameBoardComponent implements OnInit {
   // Get reference to the canvas.
   @ViewChild('board', { static: true })
-  canvas: ElementRef<HTMLCanvasElement>;
+  canvasBoard: ElementRef<HTMLCanvasElement>;
+  @ViewChild('nextPiece', { static: true })
+  canvasNextPiece: ElementRef<HTMLCanvasElement>;
 
   points: number;
   lines: number;
   level: number;
 
-  private canvasRenderingContext: CanvasRenderingContext2D;
+  private canvasRenderingContextBoard: CanvasRenderingContext2D;
+  private canvasRenderingContextNextPiece: CanvasRenderingContext2D;
   private board: number[][];
   private currentPiece: PieceObject;
   private nextPiece: PieceObject;
@@ -136,6 +145,7 @@ export class GameBoardComponent implements OnInit {
 
   ngOnInit() {
     this.initBoard();
+    this.initNextPiece();
     this.resetGame();
   }
 
@@ -145,8 +155,9 @@ export class GameBoardComponent implements OnInit {
     }
 
     this.resetGame();
-    this.currentPiece = new PieceObject(this.canvasRenderingContext);
-    this.nextPiece = new PieceObject(this.canvasRenderingContext);
+    this.nextPiece = new PieceObject(this.canvasRenderingContextBoard);
+    this.currentPiece = new PieceObject(this.canvasRenderingContextBoard);
+    this.nextPiece.drawNext(this.canvasRenderingContextNextPiece);
     this.animate();
   }
 
@@ -212,8 +223,8 @@ export class GameBoardComponent implements OnInit {
     this.board.forEach((row, y) => {
       row.forEach((value, x) => {
         if (value > 0) {
-          this.canvasRenderingContext.fillStyle = COLORS[value];
-          this.canvasRenderingContext.fillRect(x, y, 1, 1);
+          this.canvasRenderingContextBoard.fillStyle = COLORS[value];
+          this.canvasRenderingContextBoard.fillRect(x, y, 1, 1);
         }
       });
     });
@@ -242,11 +253,11 @@ export class GameBoardComponent implements OnInit {
   private gameOver() {
     cancelAnimationFrame(this.requestAnimationFrameId);
 
-    this.canvasRenderingContext.fillStyle = '#444';
-    this.canvasRenderingContext.fillRect(0.25, 3, 9.5, 2);
-    this.canvasRenderingContext.font = '1px "Press Start 2P"';
-    this.canvasRenderingContext.fillStyle = 'red';
-    this.canvasRenderingContext.fillText('GAME OVER', 0.55, 4.6);
+    this.canvasRenderingContextBoard.fillStyle = '#444';
+    this.canvasRenderingContextBoard.fillRect(0.25, 3, 9.5, 2);
+    this.canvasRenderingContextBoard.font = '1px "Press Start 2P"';
+    this.canvasRenderingContextBoard.fillStyle = 'red';
+    this.canvasRenderingContextBoard.fillText('GAME OVER', 0.55, 4.6);
   }
 
   private drop(): boolean {
@@ -262,7 +273,9 @@ export class GameBoardComponent implements OnInit {
         return false;
       }
 
-      this.currentPiece = new PieceObject(this.canvasRenderingContext);
+      this.currentPiece = this.nextPiece;
+      this.nextPiece = new PieceObject(this.canvasRenderingContextBoard);
+      this.nextPiece.drawNext(this.canvasRenderingContextNextPiece);
     }
 
     return true;
@@ -270,11 +283,11 @@ export class GameBoardComponent implements OnInit {
 
   private draw() {
     // Clear the old position before drawing
-    this.canvasRenderingContext.clearRect(
+    this.canvasRenderingContextBoard.clearRect(
       0,
       0,
-      this.canvasRenderingContext.canvas.width,
-      this.canvasRenderingContext.canvas.height
+      this.canvasRenderingContextBoard.canvas.width,
+      this.canvasRenderingContextBoard.canvas.height
     );
 
     this.currentPiece.draw();
@@ -283,12 +296,27 @@ export class GameBoardComponent implements OnInit {
 
   private initBoard() {
     // Get the 2D context that we draw on.
-    this.canvasRenderingContext = this.canvas.nativeElement.getContext('2d');
+    this.canvasRenderingContextBoard = this.canvasBoard.nativeElement.getContext(
+      '2d'
+    );
 
     // Calculate size of canvas from constants.
-    this.canvasRenderingContext.canvas.width = COLS * BLOCK_SIZE;
-    this.canvasRenderingContext.canvas.height = ROWS * BLOCK_SIZE;
+    this.canvasRenderingContextBoard.canvas.width = COLS * BLOCK_SIZE;
+    this.canvasRenderingContextBoard.canvas.height = ROWS * BLOCK_SIZE;
 
-    this.canvasRenderingContext.scale(BLOCK_SIZE, BLOCK_SIZE);
+    this.canvasRenderingContextBoard.scale(BLOCK_SIZE, BLOCK_SIZE);
+  }
+
+  private initNextPiece() {
+    // Get the 2D context that we draw on.
+    this.canvasRenderingContextNextPiece = this.canvasNextPiece.nativeElement.getContext(
+      '2d'
+    );
+
+    // Calculate size of canvas from constants.
+    this.canvasRenderingContextNextPiece.canvas.width = 4 * BLOCK_SIZE;
+    this.canvasRenderingContextNextPiece.canvas.height = 4 * BLOCK_SIZE;
+
+    this.canvasRenderingContextNextPiece.scale(BLOCK_SIZE / 2, BLOCK_SIZE / 2);
   }
 }

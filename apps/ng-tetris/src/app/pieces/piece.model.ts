@@ -42,6 +42,26 @@ export class PieceObject implements Piece {
     });
   }
 
+  drawNext(canvasRenderingContext: CanvasRenderingContext2D) {
+    canvasRenderingContext.clearRect(
+      0,
+      0,
+      canvasRenderingContext.canvas.width,
+      canvasRenderingContext.canvas.height
+    );
+    canvasRenderingContext.fillStyle = this.color;
+
+    this.shape.forEach((row, y) => {
+      row.forEach((value, x) => {
+        if (value > 0) {
+          // this.x & this.y = position on the board
+          // x & y position are the positions of the shape
+          canvasRenderingContext.fillRect(x, y, 1, 1);
+        }
+      });
+    });
+  }
+
   move(movedPiece: Piece) {
     this.x = movedPiece.x;
     this.y = movedPiece.y;
