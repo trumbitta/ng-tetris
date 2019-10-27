@@ -7,7 +7,7 @@
     "nx": "nx",
     "start": "ng serve",
     "build": "ng build",
-    "build:ci": "npm run affected:build -- --base=origin/master~1 --head=origin/master --prod --no-progress",
+    "build:ci": "npm run affected:build -- --base=remotes/origin/master~1 --head=remotes/origin/master --prod --no-progress",
     "test": "ng test",
     "lint": "nx workspace-lint && ng lint",
     "e2e": "ng e2e",
